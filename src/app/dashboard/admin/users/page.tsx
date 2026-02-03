@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 interface User {
     id: string;
@@ -36,6 +37,10 @@ export default function AdminUsersPage() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
     const [updateLoading, setUpdateLoading] = useState<string | null>(null);
+
+    // Delete Modal State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -117,6 +122,35 @@ export default function AdminUsersPage() {
             alert(err instanceof Error ? err.message : "Failed to update status");
         } finally {
             setUpdateLoading(null);
+        }
+    };
+
+    const handleDeleteClick = (user: User) => {
+        setUserToDelete(user);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!userToDelete) return;
+
+        try {
+            const response = await fetch(`/api/admin/users?userId=${userToDelete.id}`, {
+                method: "DELETE",
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to delete user");
+            }
+
+            // Remove user from list
+            setUsers(users.filter(u => u.id !== userToDelete.id));
+            setPagination(prev => ({
+                ...prev,
+                total: prev.total - 1
+            }));
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to delete user");
         }
     };
 
@@ -235,10 +269,10 @@ export default function AdminUsersPage() {
                                                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                                     disabled={updateLoading === user.id || user.id === session?.user?.id}
                                                     className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${user.role === "ADMIN"
-                                                            ? "bg-purple-50 border-purple-200 text-purple-700"
-                                                            : user.role === "FACULTY"
-                                                                ? "bg-blue-50 border-blue-200 text-blue-700"
-                                                                : "bg-green-50 border-green-200 text-green-700"
+                                                        ? "bg-purple-50 border-purple-200 text-purple-700"
+                                                        : user.role === "FACULTY"
+                                                            ? "bg-blue-50 border-blue-200 text-blue-700"
+                                                            : "bg-green-50 border-green-200 text-green-700"
                                                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                                                 >
                                                     <option value="STUDENT">Student</option>
@@ -248,8 +282,8 @@ export default function AdminUsersPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${user.isActive
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-red-100 text-red-700"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-red-100 text-red-700"
                                                     }`}>
                                                     <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"
                                                         }`}></span>
@@ -260,20 +294,32 @@ export default function AdminUsersPage() {
                                                 {new Date(user.createdAt).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => handleStatusToggle(user.id, user.isActive)}
-                                                    disabled={updateLoading === user.id || user.id === session?.user?.id}
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${user.isActive
-                                                            ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleStatusToggle(user.id, user.isActive)}
+                                                        disabled={updateLoading === user.id || user.id === session?.user?.id}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${user.isActive
+                                                            ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
                                                             : "bg-green-50 text-green-600 hover:bg-green-100"
-                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                >
-                                                    {updateLoading === user.id
-                                                        ? "..."
-                                                        : user.isActive
-                                                            ? "Deactivate"
-                                                            : "Activate"}
-                                                </button>
+                                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                    >
+                                                        {updateLoading === user.id
+                                                            ? "..."
+                                                            : user.isActive
+                                                                ? "Deactivate"
+                                                                : "Activate"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(user)}
+                                                        disabled={updateLoading === user.id || user.id === session?.user?.id}
+                                                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                        title="Delete User"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -310,6 +356,19 @@ export default function AdminUsersPage() {
                     )}
                 </Card>
             </div>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setUserToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete User"
+                description={`Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone.`}
+                confirmText="Delete User"
+                variant="danger"
+            />
         </div>
     );
 }

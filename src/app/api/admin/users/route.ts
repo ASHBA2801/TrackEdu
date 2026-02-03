@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
         const where: {
             OR?: { name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" } }[];
             role?: UserRole;
-        } = {};
+            isDeleted: boolean;
+        } = {
+            isDeleted: false
+        };
 
         if (search) {
             where.OR = [
@@ -169,6 +172,64 @@ export async function PATCH(req: NextRequest) {
         });
     } catch (error) {
         console.error("Update user error:", error);
+        return NextResponse.json(
+            { error: "An unexpected error occurred" },
+            { status: 500 }
+        );
+    }
+}
+
+// DELETE /api/admin/users - Soft delete user
+export async function DELETE(req: NextRequest) {
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        if (session.user.role !== "ADMIN") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const userId = searchParams.get("userId");
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "User ID is required" },
+                { status: 400 }
+            );
+        }
+
+        if (userId === session.user.id) {
+            return NextResponse.json(
+                { error: "Cannot delete your own account" },
+                { status: 400 }
+            );
+        }
+
+        // Check user role before deleting (Prevent deleting Admins/SuperAdmin)
+        const userToDelete = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true }
+        });
+
+        if (userToDelete?.role === "ADMIN") {
+            return NextResponse.json(
+                { error: "Cannot delete an Administrator account" },
+                { status: 403 }
+            );
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { isDeleted: true, isActive: false },
+        });
+
+        return NextResponse.json({ message: "User deleted successfully" });
+    } catch (error) {
+        console.error("Delete user error:", error);
         return NextResponse.json(
             { error: "An unexpected error occurred" },
             { status: 500 }

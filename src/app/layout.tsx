@@ -12,6 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TrackEdu - College Attendance Management System",
   description: "A comprehensive attendance management system for colleges with role-based dashboards for students, faculty, and administrators.",
+  icons: {
+    icon: "/Logo.png",
+    shortcut: "/Logo.png",
+    apple: "/Logo.png",
+  },
 };
 
 export default function RootLayout({

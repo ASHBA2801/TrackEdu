@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { ChangePasswordModal } from '@/components/ui';
 
@@ -52,8 +53,15 @@ export function Header({ title, showRoleBadge = true }: HeaderProps) {
             <header className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/" className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
-                            AttendTrack
+                        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
+                            <Image
+                                src="/Logo.png"
+                                alt="TrackEdu Logo"
+                                width={36}
+                                height={36}
+                                className="rounded-lg"
+                            />
+                            TrackEdu
                         </Link>
                         {title && (
                             <>
