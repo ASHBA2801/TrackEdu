@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types';
+import { useSession } from 'next-auth/react';
+import type { UserRole } from '@prisma/client';
 
 interface RoleGuardProps {
     children: React.ReactNode;
@@ -11,29 +11,35 @@ interface RoleGuardProps {
     redirectTo?: string;
 }
 
-export function RoleGuard({ children, allowedRoles, redirectTo = '/' }: RoleGuardProps) {
-    const { role, isAuthenticated } = useAuth();
+export function RoleGuard({ children, allowedRoles, redirectTo = '/login' }: RoleGuardProps) {
+    const { data: session, status } = useSession();
     const router = useRouter();
 
+    const isLoading = status === 'loading';
+    const isAuthenticated = status === 'authenticated';
+    const userRole = session?.user?.role;
+
     useEffect(() => {
+        if (isLoading) return;
+
         if (!isAuthenticated) {
             router.replace(redirectTo);
             return;
         }
 
-        if (role && !allowedRoles.includes(role)) {
+        if (userRole && !allowedRoles.includes(userRole)) {
             // Redirect to appropriate dashboard based on role
             const dashboardRoutes: Record<UserRole, string> = {
-                student: '/student/dashboard',
-                faculty: '/faculty/dashboard',
-                admin: '/admin/dashboard',
+                STUDENT: '/dashboard/student',
+                FACULTY: '/dashboard/faculty',
+                ADMIN: '/dashboard/admin',
             };
-            router.replace(dashboardRoutes[role] || redirectTo);
+            router.replace(dashboardRoutes[userRole] || redirectTo);
         }
-    }, [isAuthenticated, role, allowedRoles, router, redirectTo]);
+    }, [isLoading, isAuthenticated, userRole, allowedRoles, router, redirectTo]);
 
-    // Show nothing while checking auth
-    if (!isAuthenticated || !role || !allowedRoles.includes(role)) {
+    // Show loading spinner while checking auth
+    if (isLoading || !isAuthenticated || !userRole || !allowedRoles.includes(userRole)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -43,3 +49,4 @@ export function RoleGuard({ children, allowedRoles, redirectTo = '/' }: RoleGuar
 
     return <>{children}</>;
 }
+
