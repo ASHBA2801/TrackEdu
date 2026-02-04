@@ -45,6 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     name: user.name ?? "",
                     email: user.email,
                     role: user.role,
+                    isPasswordChangeRequired: user.isPasswordChangeRequired,
                 };
             },
         }),
@@ -54,6 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (user) {
                 token.id = user.id as string;
                 token.role = user.role as UserRole;
+                token.isPasswordChangeRequired = user.isPasswordChangeRequired;
             }
             return token;
         },
@@ -61,6 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as UserRole;
+                session.user.isPasswordChangeRequired = token.isPasswordChangeRequired;
             }
             return session;
         },

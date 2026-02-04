@@ -25,6 +25,8 @@ model User {
   name      String
   role      UserRole
   isActive  Boolean  @default(true)
+  isDeleted Boolean  @default(false)
+  isPasswordChangeRequired Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   student   Student?
@@ -35,17 +37,20 @@ model Department {
   id        String       @id @default(cuid())
   name      String
   code      String       @unique
+  isDeleted Boolean      @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   students  Student[]
   faculties Faculty[]
   subjects  Subject[]
+  classes   Classroom[]
 }
 
 model Subject {
   id           String       @id @default(cuid())
   name         String
   code         String       @unique
+  isDeleted    Boolean      @default(false)
   semester     Int
   credits      Int
   departmentId String
@@ -62,6 +67,7 @@ model Student {
   year         Int
   section      String
   isActive     Boolean      @default(true)
+  isDeleted    Boolean      @default(false)
   userId       String       @unique
   departmentId String
   createdAt    DateTime     @default(now())
@@ -74,6 +80,7 @@ model Student {
 model Faculty {
   id           String       @id @default(cuid())
   isActive     Boolean      @default(true)
+  isDeleted    Boolean      @default(false)
   userId       String       @unique
   departmentId String
   createdAt    DateTime     @default(now())
@@ -97,4 +104,14 @@ model Attendance {
   markedBy   Faculty          @relation(fields: [markedById], references: [id])
 
   @@unique([studentId, subjectId, date])
+}
+
+model Classroom {
+  id           String       @id @default(cuid())
+  name         String
+  departmentId String
+  isDeleted    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  department   Department   @relation(fields: [departmentId], references: [id])
 }

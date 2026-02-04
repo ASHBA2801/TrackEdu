@@ -1,5 +1,7 @@
 import prisma from "./prisma";
 
+export { prisma };
+
 /**
  * Get a user by their email address
  * @param email - User's email address
@@ -15,6 +17,7 @@ export async function getUserByEmail(email: string) {
             password: true,
             role: true,
             isActive: true,
+            isPasswordChangeRequired: true,
         },
     });
 }

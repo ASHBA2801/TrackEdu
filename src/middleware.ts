@@ -78,6 +78,14 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next();
     }
 
+    // Force password change if required
+    // Allow access to /change-password and /api/auth/change-password and /api/auth/signout
+    if (isAuthenticated && token?.isPasswordChangeRequired) {
+        if (pathname !== "/change-password" && !pathname.startsWith("/api/auth")) {
+            return NextResponse.redirect(new URL("/change-password", req.url));
+        }
+    }
+
     // Allow public routes
     if (isPublicRoute(pathname)) {
         // Redirect authenticated users away from login/signup pages to their dashboard
