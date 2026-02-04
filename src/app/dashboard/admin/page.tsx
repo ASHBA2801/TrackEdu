@@ -29,8 +29,9 @@ interface ModalState {
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [modal, setModal] = useState<ModalState>({ isOpen: false, type: 'add', entity: null });
-    const [formData, setFormData] = useState<Record<string, string>>({});
+    const [formData, setFormData] = useState<Record<string, any>>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
     // Data State
     const [students, setStudents] = useState<StudentWithDetails[]>([]);
@@ -88,8 +89,9 @@ export default function AdminDashboard() {
 
     const openModal = (type: 'add' | 'edit', entity: ModalState['entity'], data?: Record<string, unknown>) => {
         setModal({ isOpen: true, type, entity, data });
-        setFormData(data as Record<string, string> || {});
+        setFormData(data || {});
         setMessage(null);
+        setGeneratedPassword(null);
     };
 
     const closeModal = () => {
@@ -112,13 +114,24 @@ export default function AdminDashboard() {
             else if (modal.entity === 'subject') endpoint = '/api/subjects';
 
             if (modal.type === 'add') {
-                await fetch(endpoint, {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error);
+
                 fetchData(); // Refresh
                 setMessage({ type: 'success', text: `${modal.entity} added successfully!` });
+
+                // If faculty created, show password
+                if (modal.entity === 'faculty' && data.data?.generatedPassword) {
+                    setGeneratedPassword(data.data.generatedPassword);
+                    return; // Don't close modal immediately
+                }
+
             } else {
                 // Edit not implemented in this turn
                 setMessage({ type: 'error', text: 'Edit functionality not fully implemented yet' });
@@ -128,8 +141,8 @@ export default function AdminDashboard() {
                 closeModal();
                 setMessage(null);
             }, 1500);
-        } catch (e) {
-            setMessage({ type: 'error', text: 'Operation failed' });
+        } catch (e: any) {
+            setMessage({ type: 'error', text: e.message || 'Operation failed' });
         }
     };
 
@@ -445,6 +458,15 @@ export default function AdminDashboard() {
                                     <>
                                         <Input label="Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                         <Input label="Email" type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        {modal.type === 'add' && (
+                                            <Input
+                                                label="Password (Optional)"
+                                                type="password"
+                                                value={formData.password || ''}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                placeholder="Leave blank to auto-generate"
+                                            />
+                                        )}
                                         <Input label="Roll Number" value={formData.rollNumber || ''} onChange={e => setFormData({ ...formData, rollNumber: e.target.value })} />
                                         <Select
                                             label="Department"
@@ -463,12 +485,49 @@ export default function AdminDashboard() {
                                     <>
                                         <Input label="Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                         <Input label="Email" type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        {modal.type === 'add' && (
+                                            <Input
+                                                label="Password (Optional)"
+                                                type="password"
+                                                value={formData.password || ''}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                placeholder="Leave blank to auto-generate"
+                                            />
+                                        )}
                                         <Select
                                             label="Department"
                                             options={departments.map(d => ({ value: d.id, label: d.name }))}
                                             value={formData.departmentId || ''}
                                             onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                         />
+
+                                        <div className="mt-4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Subjects</label>
+                                            <div className="h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+                                                {subjects.map(subject => (
+                                                    <label key={subject.id} className="flex items-start gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="mt-1 rounded text-blue-600 focus:ring-blue-500"
+                                                            checked={(formData.assignedSubjects as string[] || []).includes(subject.id)}
+                                                            onChange={(e) => {
+                                                                const current = (formData.assignedSubjects as string[] || []);
+                                                                const updated = e.target.checked
+                                                                    ? [...current, subject.id]
+                                                                    : current.filter(id => id !== subject.id);
+                                                                setFormData({ ...formData, assignedSubjects: updated });
+                                                            }}
+                                                        />
+                                                        <div>
+                                                            <div className="text-sm font-medium text-gray-900">{subject.name} ({subject.code})</div>
+                                                            <div className="text-xs text-gray-500">{subject.departmentName || 'Unknown Dept'}</div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                                {subjects.length === 0 && <p className="text-sm text-gray-500 text-center">No subjects available</p>}
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">Select subjects from any department.</p>
+                                        </div>
                                     </>
                                 )}
 
@@ -497,6 +556,20 @@ export default function AdminDashboard() {
                                 )}
                             </div>
 
+                        </div>
+
+                        {generatedPassword ? (
+                            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <h4 className="text-lg font-bold text-green-800 mb-2">Faculty Created Successfully!</h4>
+                                <p className="text-sm text-green-700 mb-2">Please copy this password immediately. It will not be shown again.</p>
+                                <div className="bg-white p-3 rounded border border-green-300 font-mono text-lg text-center select-all cursor-text mb-4">
+                                    {generatedPassword}
+                                </div>
+                                <Button variant="primary" className="w-full" onClick={closeModal}>
+                                    Done
+                                </Button>
+                            </div>
+                        ) : (
                             <div className="flex gap-3 mt-6">
                                 <Button variant="secondary" className="flex-1" onClick={closeModal}>
                                     Cancel
@@ -505,7 +578,7 @@ export default function AdminDashboard() {
                                     {modal.type === 'add' ? 'Add' : 'Save'}
                                 </Button>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 

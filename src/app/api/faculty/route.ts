@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { generateSecurePassword } from "@/lib/utils/password";
+import { hashPassword } from "@/lib/bcrypt";
 
 // GET /api/faculty - Get all faculty
 export async function GET(request: NextRequest) {
@@ -54,8 +56,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, email, departmentId, assignedSubjects = [] } = body;
+        const { name, email, password, departmentId, assignedSubjects = [] } = body;
 
+        // Validation
         if (!name || !email || !departmentId) {
             return NextResponse.json(
                 { success: false, error: "Missing required fields" },
@@ -63,14 +66,39 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const tempPassword = "password123";
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (existingUser) {
+            if (existingUser.isDeleted) {
+                // Self-heal: Email was not renamed on deletion previously
+                // Rename it now to allow new account creation
+                const timestamp = new Date().getTime();
+                await prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: { email: `deleted_${timestamp}_${existingUser.email}` }
+                });
+            } else {
+                return NextResponse.json(
+                    { success: false, error: "User with this email already exists" },
+                    { status: 409 }
+                );
+            }
+        }
+
+        // Generate secure password or use provided
+        const rawPassword = password || generateSecurePassword();
+        const hashedPassword = await hashPassword(rawPassword);
 
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                password: tempPassword,
+                password: hashedPassword,
                 role: "FACULTY",
+                isPasswordChangeRequired: true,
             },
         });
 
@@ -89,16 +117,18 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        // Return the RAW password only once
         const responseData = {
             ...newFaculty,
             name: newFaculty.user.name,
             email: newFaculty.user.email,
+            generatedPassword: rawPassword, // CAUTION: Only shown once
         };
 
         return NextResponse.json({
             success: true,
             data: responseData,
-            message: "Faculty created successfully",
+            message: "Faculty created successfully. Please save the password.",
         }, { status: 201 });
     } catch (error) {
         console.error("Create faculty error:", error);

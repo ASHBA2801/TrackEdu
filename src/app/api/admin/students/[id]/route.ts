@@ -47,10 +47,19 @@ export async function DELETE(
         // Optionally deactivate the user account associated
         if (student.userId) {
             try {
-                await prisma.user.update({
-                    where: { id: student.userId },
-                    data: { isActive: false }
-                });
+                // Get current user email first
+                const user = await prisma.user.findUnique({ where: { id: student.userId }, select: { email: true } });
+                if (user) {
+                    const timestamp = new Date().getTime();
+                    await prisma.user.update({
+                        where: { id: student.userId },
+                        data: {
+                            isActive: false,
+                            isDeleted: true, // Soft delete the user
+                            email: `deleted_${timestamp}_${user.email}`
+                        }
+                    });
+                }
             } catch (e) {
                 console.error("Failed to deactivate user for student", e);
             }

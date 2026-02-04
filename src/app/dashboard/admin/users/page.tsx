@@ -43,6 +43,11 @@ export default function AdminUsersPage() {
     const [roleFilter, setRoleFilter] = useState("");
     const [updateLoading, setUpdateLoading] = useState<string | null>(null);
 
+    // Reset Password State
+    const [resetModalOpen, setResetModalOpen] = useState(false);
+    const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
+    const [resettingUser, setResettingUser] = useState<User | null>(null);
+
     // Delete Modal State
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -110,6 +115,31 @@ export default function AdminUsersPage() {
             showToast("Role updated successfully", "success");
         } catch (err) {
             showToast(err instanceof Error ? err.message : "Failed to update role", "error");
+        } finally {
+            setUpdateLoading(null);
+        }
+    };
+
+    const handleResetPassword = async (user: User) => {
+        if (!confirm(`Are you sure you want to reset password for ${user.name}?`)) return;
+
+        setUpdateLoading(user.id);
+        setResettingUser(user);
+        try {
+            const response = await fetch("/api/admin/users/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.id }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
+            setResetPasswordResult(data.newPassword);
+            setResetModalOpen(true);
+            showToast("Password reset successfully", "success");
+        } catch (err: any) {
+            showToast(err.message || "Failed to reset password", "error");
         } finally {
             setUpdateLoading(null);
         }
@@ -367,6 +397,14 @@ export default function AdminUsersPage() {
                                                                 : "Activate"}
                                                     </button>
                                                     <button
+                                                        onClick={() => handleResetPassword(user)}
+                                                        disabled={updateLoading === user.id}
+                                                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-colors disabled:opacity-50"
+                                                        title="Reset Password"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDeleteClick(user)}
                                                         disabled={updateLoading === user.id || user.id === session?.user?.id}
                                                         className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -426,6 +464,32 @@ export default function AdminUsersPage() {
                 confirmText="Delete User"
                 variant="danger"
             />
-        </div>
+
+            {/* Reset Password Result Modal */}
+            {resetModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 mx-4">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Password Reset Successful</h3>
+                        <p className="text-gray-600 mb-4">
+                            The password for <strong>{resettingUser?.name}</strong> has been reset.
+                            Please share this new password with them immediately.
+                        </p>
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg mb-6 text-center font-mono text-xl font-bold text-green-700 select-all">
+                            {resetPasswordResult}
+                        </div>
+                        <button
+                            onClick={() => {
+                                setResetModalOpen(false);
+                                setResetPasswordResult(null);
+                                setResettingUser(null);
+                            }}
+                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div >
     );
 }
