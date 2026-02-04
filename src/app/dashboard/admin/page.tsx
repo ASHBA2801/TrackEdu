@@ -203,8 +203,14 @@ export default function AdminDashboard() {
                         {/* Add User Management Link */}
                         <div className="mt-8 px-4">
                             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
-                            <a href="/dashboard/admin/users" className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors">
-                                <UsersIcon /> User Management
+                            <a
+                                href="/dashboard/admin/users"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all text-gray-600 hover:bg-gray-50"
+                            >
+                                <span className="w-5 h-5">
+                                    <UsersIcon />
+                                </span>
+                                User Management
                             </a>
                         </div>
                     </aside>
