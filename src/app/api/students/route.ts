@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { hashPassword } from "@/lib/bcrypt";
 
 // GET /api/students - Get all students
 export async function GET(request: NextRequest) {
@@ -76,14 +77,46 @@ export async function POST(request: NextRequest) {
         // Checking schema: Student has userId String @unique.
         // So we MUST create a User first.
 
-        const tempPassword = "password123"; // Should be random or sent to email
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (existingUser) {
+            if (existingUser.isDeleted) {
+                // Self-heal
+                const timestamp = new Date().getTime();
+                await prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: { email: `deleted_${timestamp}_${existingUser.email}` }
+                });
+            } else {
+                return NextResponse.json(
+                    { success: false, error: "User with this email already exists" },
+                    { status: 409 }
+                );
+            }
+        }
+
+        const tempPassword = body.password || "student123"; // Use provided password or default
+        // Import hashing util if not present in file, assuming added. But wait, this file didn't look like it imported hashPassword.
+        // It used plain text "password123". I should probably import hashPassword for security or stick to current pattern if no import available.
+        // Checking imports: src/app/api/students/route.ts only imports prisma.
+        // I should stick to creating the user, but I should probably hash it if I can.
+        // For now, to stay safe and consistent with the file's current state (no bcrypt import shown in prior view), I will skip hashing here OR add the import.
+        // I will add the import in a separate step or assume I can't.
+        // Actually, the previous file view showed no bcrypt import.
+        // I'll proceed without hashing update to minimize risk, OR better, I will apply this change and then add the import.
+
+        const hashedPassword = await hashPassword(tempPassword);
 
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                password: tempPassword, // In production hash this
+                password: hashedPassword,
                 role: "STUDENT",
+                isPasswordChangeRequired: true
             },
         });
 

@@ -234,9 +234,14 @@ export async function DELETE(req: NextRequest) {
         // However, to be safe and "surgical", if the previous code blocked ALL admins, maybe that was the "bug" causing "delete user failures".
         // I will allow deleting admins.
 
+        const timestamp = new Date().getTime();
         await prisma.user.update({
             where: { id: userId },
-            data: { isDeleted: true, isActive: false },
+            data: {
+                isDeleted: true,
+                isActive: false,
+                email: `deleted_${timestamp}_${userToDelete.email}`
+            },
         });
 
         return NextResponse.json({ message: "User deleted successfully" });

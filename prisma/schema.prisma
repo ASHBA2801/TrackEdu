@@ -26,6 +26,7 @@ model User {
   role      UserRole
   isActive  Boolean  @default(true)
   isDeleted Boolean  @default(false)
+  isPasswordChangeRequired Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   student   Student?
