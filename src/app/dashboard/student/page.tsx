@@ -12,6 +12,7 @@ import {
 } from '@/lib/mock-data';
 import { useAuth } from '@/context/AuthContext';
 import { AttendanceSummary } from '@/types';
+import QRScanner from '@/components/student/QRScanner';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -63,6 +64,10 @@ export default function StudentDashboard() {
                 <Header title="Student Dashboard" />
 
                 <main className="p-6 max-w-7xl mx-auto">
+                    <div className="mb-8">
+                        <QRScanner studentId={studentId} />
+                    </div>
+
                     {/* Profile and Stats Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         {/* Profile Card */}
