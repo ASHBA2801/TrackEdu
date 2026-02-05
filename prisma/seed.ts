@@ -1,12 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    const facultyPassword = await bcrypt.hash('faculty123', 10);
-    const studentPassword = await bcrypt.hash('student123', 10);
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    const facultyPassword = await bcrypt.hash('faculty123', 12);
+    const studentPassword = await bcrypt.hash('student123', 12);
 
     // Upsert Admin
     await prisma.user.upsert({
