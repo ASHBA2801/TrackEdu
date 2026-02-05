@@ -61,7 +61,8 @@ export async function middleware(req: NextRequest) {
     // Get the token using getToken from next-auth/jwt
     const token = await getToken({
         req,
-        secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+        secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+        secureCookie: process.env.NODE_ENV === "production",
     });
 
     const isAuthenticated = !!token;
