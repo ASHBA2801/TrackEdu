@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react';
 import { Header, RoleGuard } from '@/components/layout';
 import { ProfileCard, StatCard, SimpleTable, Card } from '@/components/ui';
 import {
-    students,
     timetable,
-    getStudentById,
-    getDepartmentById,
-    calculateAttendancePercentage
 } from '@/lib/mock-data';
 import { useAuth } from '@/context/AuthContext';
 import { AttendanceSummary } from '@/types';
@@ -16,35 +12,42 @@ import QRScanner from '@/components/student/QRScanner';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
+    const [student, setStudent] = useState<any>(null);
     const [attendanceData, setAttendanceData] = useState<{
         subjects: AttendanceSummary[];
         overall: { totalClasses: number; attended: number; percentage: number };
     } | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Get student data (using mock student for demo)
-    const studentId = user?.roleId || 'stu-1';
-    const student = getStudentById(studentId);
-    const department = student ? getDepartmentById(student.departmentId) : null;
-
     useEffect(() => {
-        // Fetch attendance summary
-        const fetchAttendance = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch(`/api/attendance?studentId=${studentId}&summary=true`);
-                const data = await res.json();
-                if (data.success) {
-                    setAttendanceData(data.data);
+                // 1. Fetch Student Profile
+                const profileRes = await fetch('/api/student/me');
+                const profileData = await profileRes.json();
+
+                if (profileData.success) {
+                    setStudent(profileData.data);
+
+                    // 2. Fetch Attendance (using real student ID)
+                    const attendanceRes = await fetch(`/api/attendance?studentId=${profileData.data.id}&summary=true`);
+                    const attendanceJson = await attendanceRes.json();
+
+                    if (attendanceJson.success) {
+                        setAttendanceData(attendanceJson.data);
+                    }
                 }
             } catch (error) {
-                console.error('Failed to fetch attendance:', error);
+                console.error('Failed to fetch dashboard data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchAttendance();
-    }, [studentId]);
+        if (user) {
+            fetchData();
+        }
+    }, [user]);
 
     const getAttendanceColor = (percentage: number) => {
         if (percentage >= 75) return 'text-green-600';
@@ -58,6 +61,14 @@ export default function StudentDashboard() {
         return 'bg-red-100';
     };
 
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
     return (
         <RoleGuard allowedRoles={['STUDENT']}>
             <div className="min-h-screen bg-gray-50">
@@ -65,7 +76,8 @@ export default function StudentDashboard() {
 
                 <main className="p-6 max-w-7xl mx-auto">
                     <div className="mb-8">
-                        <QRScanner studentId={studentId} />
+                        {/* Pass real student ID to scanner */}
+                        {student && <QRScanner studentId={student.id} />}
                     </div>
 
                     {/* Profile and Stats Section */}
@@ -77,7 +89,7 @@ export default function StudentDashboard() {
                                 subtitle={student.email}
                                 details={[
                                     { label: 'Roll Number', value: student.rollNumber },
-                                    { label: 'Department', value: department?.name || 'N/A' },
+                                    { label: 'Department', value: student.departmentName || 'N/A' },
                                     { label: 'Year', value: `${student.year}${student.year === 1 ? 'st' : student.year === 2 ? 'nd' : student.year === 3 ? 'rd' : 'th'} Year` },
                                     { label: 'Section', value: `Section ${student.section}` },
                                 ]}
@@ -89,10 +101,10 @@ export default function StudentDashboard() {
                         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <StatCard
                                 title="Overall Attendance"
-                                value={loading ? '...' : `${attendanceData?.overall.percentage || 0}%`}
-                                subtitle={loading ? 'Loading...' : `${attendanceData?.overall.attended || 0} of ${attendanceData?.overall.totalClasses || 0} classes`}
+                                value={`${attendanceData?.overall.percentage || 0}%`}
+                                subtitle={`${attendanceData?.overall.attended || 0} of ${attendanceData?.overall.totalClasses || 0} classes`}
                                 trend={
-                                    !loading && attendanceData?.overall.percentage
+                                    attendanceData?.overall.percentage
                                         ? attendanceData.overall.percentage >= 75
                                             ? 'up'
                                             : attendanceData.overall.percentage >= 60
@@ -103,25 +115,25 @@ export default function StudentDashboard() {
                             />
                             <StatCard
                                 title="Total Subjects"
-                                value={loading ? '...' : attendanceData?.subjects.length || 0}
+                                value={attendanceData?.subjects.length || 0}
                                 subtitle="Currently enrolled"
                             />
                             <StatCard
                                 title="Classes This Week"
-                                value="20"
-                                subtitle="5 days schedule"
+                                value="-"
+                                subtitle="Schedule integration pending"
                             />
                             <StatCard
                                 title="Status"
                                 value={
-                                    !loading && attendanceData?.overall.percentage && attendanceData.overall.percentage >= 75
+                                    attendanceData?.overall.percentage && attendanceData.overall.percentage >= 75
                                         ? 'Good'
-                                        : !loading && attendanceData?.overall.percentage && attendanceData.overall.percentage >= 60
+                                        : attendanceData?.overall.percentage && attendanceData.overall.percentage >= 60
                                             ? 'Warning'
                                             : 'Critical'
                                 }
                                 subtitle={
-                                    !loading && attendanceData?.overall.percentage && attendanceData.overall.percentage >= 75
+                                    attendanceData?.overall.percentage && attendanceData.overall.percentage >= 75
                                         ? 'Keep it up!'
                                         : 'Improve attendance'
                                 }
