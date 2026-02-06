@@ -6,12 +6,12 @@ import { ProfileCard, StatCard, SimpleTable, Card } from '@/components/ui';
 import {
     timetable,
 } from '@/lib/mock-data';
-import { useAuth } from '@/context/AuthContext';
+import { useSession } from 'next-auth/react';
 import { AttendanceSummary } from '@/types';
 import QRScanner from '@/components/student/QRScanner';
 
 export default function StudentDashboard() {
-    const { user } = useAuth();
+    const { data: session, status } = useSession();
     const [student, setStudent] = useState<any>(null);
     const [attendanceData, setAttendanceData] = useState<{
         subjects: AttendanceSummary[];
@@ -24,6 +24,13 @@ export default function StudentDashboard() {
             try {
                 // 1. Fetch Student Profile
                 const profileRes = await fetch('/api/student/me');
+
+                if (!profileRes.ok) {
+                    console.error("Failed to fetch student profile");
+                    setLoading(false);
+                    return;
+                }
+
                 const profileData = await profileRes.json();
 
                 if (profileData.success) {
@@ -44,10 +51,13 @@ export default function StudentDashboard() {
             }
         };
 
-        if (user) {
+        if (status === 'authenticated') {
             fetchData();
+        } else if (status === 'unauthenticated') {
+            // Should be handled by RoleGuard, but just in case
+            setLoading(false);
         }
-    }, [user]);
+    }, [status, session]);
 
     const getAttendanceColor = (percentage: number) => {
         if (percentage >= 75) return 'text-green-600';
