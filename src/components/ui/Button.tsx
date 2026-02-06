@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline';
     size?: 'sm' | 'md' | 'lg';
     children: ReactNode;
     isLoading?: boolean;
@@ -24,6 +24,7 @@ export function Button({
         success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
         danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
         ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-400',
+        outline: 'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400',
     };
 
     const sizeStyles = {
@@ -90,8 +91,8 @@ export function ToggleButtonGroup({
                     type="button"
                     onClick={() => onChange(option.value)}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${value === option.value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                 >
                     {option.label}
@@ -118,8 +119,8 @@ export function AttendanceToggle({
                 type="button"
                 onClick={() => onChange('present')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${status === 'present'
-                        ? 'bg-green-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700'
+                    ? 'bg-green-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700'
                     }`}
             >
                 Present
@@ -128,8 +129,8 @@ export function AttendanceToggle({
                 type="button"
                 onClick={() => onChange('absent')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${status === 'absent'
-                        ? 'bg-red-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700'
+                    ? 'bg-red-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700'
                     }`}
             >
                 Absent

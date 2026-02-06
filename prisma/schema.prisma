@@ -59,6 +59,7 @@ model Subject {
   department   Department   @relation(fields: [departmentId], references: [id])
   attendance   Attendance[]
   faculties    Faculty[]    @relation("FacultySubjects")
+  sessions     ClassSession[]
 }
 
 model Student {
@@ -89,21 +90,25 @@ model Faculty {
   department       Department   @relation(fields: [departmentId], references: [id])
   subjects         Subject[]    @relation("FacultySubjects")
   attendanceMarked Attendance[]
+  sessions         ClassSession[]
 }
 
 model Attendance {
-  id         String           @id @default(cuid())
-  date       DateTime         @db.Date
-  status     AttendanceStatus
-  studentId  String
-  subjectId  String
-  markedById String
-  createdAt  DateTime         @default(now())
-  student    Student          @relation(fields: [studentId], references: [id])
-  subject    Subject          @relation(fields: [subjectId], references: [id])
-  markedBy   Faculty          @relation(fields: [markedById], references: [id])
+  id             String           @id @default(cuid())
+  date           DateTime         @db.Date
+  status         AttendanceStatus
+  studentId      String
+  subjectId      String
+  markedById     String?
+  classSessionId String?
+  createdAt      DateTime         @default(now())
+  student        Student          @relation(fields: [studentId], references: [id])
+  subject        Subject          @relation(fields: [subjectId], references: [id])
+  markedBy       Faculty?         @relation(fields: [markedById], references: [id])
+  classSession   ClassSession?    @relation(fields: [classSessionId], references: [id])
 
   @@unique([studentId, subjectId, date])
+  @@unique([studentId, classSessionId])
 }
 
 model Classroom {
@@ -114,4 +119,33 @@ model Classroom {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   department   Department   @relation(fields: [departmentId], references: [id])
+}
+
+model ClassSession {
+  id                 String    @id @default(cuid())
+  facultyId          String
+  subjectId          String
+  startTime          DateTime  @default(now())
+  endTime            DateTime?
+  status             SessionStatus @default(ACTIVE)
+  qrEnabled          Boolean   @default(false)
+  currentQrCode      String?
+  currentQrExpiresAt DateTime?
+  qrEnabledAt        DateTime?
+  qrDisabledAt       DateTime?
+  latitude           Float?
+  longitude          Float?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  faculty    Faculty      @relation(fields: [facultyId], references: [id])
+  subject    Subject      @relation(fields: [subjectId], references: [id])
+  attendance Attendance[]
+
+  @@index([currentQrCode])
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
 }

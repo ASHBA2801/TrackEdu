@@ -5,6 +5,7 @@ import { Header, RoleGuard } from '@/components/layout';
 import { Card, Button, AttendanceToggle } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { Student } from '@/types';
+import SessionControl from '@/components/faculty/SessionControl';
 
 type Subject = {
     id: string;
@@ -219,6 +220,7 @@ export default function FacultyDashboard() {
                     </Card>
 
                     {/* Assigned Subjects */}
+                    {/* Assigned Subjects */}
                     <Card title="Your Assigned Subjects" className="mb-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {facultyProfile?.assignedSubjects.map(subject => (
@@ -241,110 +243,115 @@ export default function FacultyDashboard() {
                     </Card>
 
                     {/* Attendance Marking Section */}
-                    {selectedSubject && (
-                        <Card title="Mark Attendance" className="mb-6">
-                            {/* Date Picker and Quick Actions */}
-                            <div className="flex flex-wrap items-end gap-4 mb-6 pb-6 border-b border-gray-200">
-                                <div className="w-48">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={(e) => setSelectedDate(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div className="flex gap-2">
-                                    <Button variant="success" size="sm" onClick={markAllPresent} disabled={loadingStudents}>
-                                        Mark All Present
-                                    </Button>
-                                    <Button variant="danger" size="sm" onClick={markAllAbsent} disabled={loadingStudents}>
-                                        Mark All Absent
-                                    </Button>
-                                </div>
-                                <div className="ml-auto flex gap-4 text-sm">
-                                    <span className="text-green-600 font-medium">Present: {presentCount}</span>
-                                    <span className="text-red-600 font-medium">Absent: {absentCount}</span>
-                                    <span className="text-gray-500">Unmarked: {unmarkedCount}</span>
-                                </div>
-                            </div>
+                    {selectedSubject && facultyProfile && (
+                        <>
+                            <SessionControl subjectId={selectedSubject} facultyId={facultyProfile.id} />
 
-                            {/* Student List */}
-                            <div className="overflow-x-auto">
-                                {loadingStudents ? (
-                                    <div className="py-8 text-center text-gray-500">Loading students...</div>
-                                ) : studentList.length > 0 ? (
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50 border-b border-gray-200">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                    #
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                    Roll Number
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                    Student Name
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                    Section
-                                                </th>
-                                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                    Attendance
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {studentList.map((student, index) => {
-                                                const record = attendanceRecords.find(r => r.studentId === student.id);
-                                                return (
-                                                    <tr key={student.id} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-4 text-sm text-gray-600">{index + 1}</td>
-                                                        <td className="px-4 py-4 text-sm font-medium text-gray-800">
-                                                            {student.rollNumber}
-                                                        </td>
-                                                        <td className="px-4 py-4 text-sm text-gray-700">{student.name}</td>
-                                                        <td className="px-4 py-4 text-sm text-gray-600">Section {student.section}</td>
-                                                        <td className="px-4 py-4 text-center">
-                                                            <AttendanceToggle
-                                                                status={record?.status || null}
-                                                                onChange={(status) => handleAttendanceChange(student.id, status)}
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                ) : (
-                                    <div className="py-8 text-center text-gray-500">No students found for this subject/semester.</div>
-                                )}
-                            </div>
+                            <Card title="Mark Manual Attendance" className="mb-6">
 
-                            {/* Submit Button */}
-                            <div className="mt-6 pt-6 border-t border-gray-200 flex items-center justify-between">
-                                {submitMessage && (
-                                    <p
-                                        className={`text-sm font-medium ${submitMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
-                                            }`}
+                                {/* Date Picker and Quick Actions */}
+                                <div className="flex flex-wrap items-end gap-4 mb-6 pb-6 border-b border-gray-200">
+                                    <div className="w-48">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                            Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={selectedDate}
+                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="success" size="sm" onClick={markAllPresent} disabled={loadingStudents}>
+                                            Mark All Present
+                                        </Button>
+                                        <Button variant="danger" size="sm" onClick={markAllAbsent} disabled={loadingStudents}>
+                                            Mark All Absent
+                                        </Button>
+                                    </div>
+                                    <div className="ml-auto flex gap-4 text-sm">
+                                        <span className="text-green-600 font-medium">Present: {presentCount}</span>
+                                        <span className="text-red-600 font-medium">Absent: {absentCount}</span>
+                                        <span className="text-gray-500">Unmarked: {unmarkedCount}</span>
+                                    </div>
+                                </div>
+
+                                {/* Student List */}
+                                <div className="overflow-x-auto">
+                                    {loadingStudents ? (
+                                        <div className="py-8 text-center text-gray-500">Loading students...</div>
+                                    ) : studentList.length > 0 ? (
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                        #
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                        Roll Number
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                        Student Name
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                        Section
+                                                    </th>
+                                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                        Attendance
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {studentList.map((student, index) => {
+                                                    const record = attendanceRecords.find(r => r.studentId === student.id);
+                                                    return (
+                                                        <tr key={student.id} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-4 text-sm text-gray-600">{index + 1}</td>
+                                                            <td className="px-4 py-4 text-sm font-medium text-gray-800">
+                                                                {student.rollNumber}
+                                                            </td>
+                                                            <td className="px-4 py-4 text-sm text-gray-700">{student.name}</td>
+                                                            <td className="px-4 py-4 text-sm text-gray-600">Section {student.section}</td>
+                                                            <td className="px-4 py-4 text-center">
+                                                                <AttendanceToggle
+                                                                    status={record?.status || null}
+                                                                    onChange={(status) => handleAttendanceChange(student.id, status)}
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <div className="py-8 text-center text-gray-500">No students found for this subject/semester.</div>
+                                    )}
+                                </div>
+
+                                {/* Submit Button */}
+                                <div className="mt-6 pt-6 border-t border-gray-200 flex items-center justify-between">
+                                    {submitMessage && (
+                                        <p
+                                            className={`text-sm font-medium ${submitMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
+                                                }`}
+                                        >
+                                            {submitMessage.text}
+                                        </p>
+                                    )}
+                                    <Button
+                                        variant="primary"
+                                        size="lg"
+                                        onClick={handleSubmit}
+                                        isLoading={isSubmitting}
+                                        disabled={loadingStudents || unmarkedCount > 0 || studentList.length === 0}
+                                        className="ml-auto"
                                     >
-                                        {submitMessage.text}
-                                    </p>
-                                )}
-                                <Button
-                                    variant="primary"
-                                    size="lg"
-                                    onClick={handleSubmit}
-                                    isLoading={isSubmitting}
-                                    disabled={loadingStudents || unmarkedCount > 0 || studentList.length === 0}
-                                    className="ml-auto"
-                                >
-                                    Submit Attendance
-                                </Button>
-                            </div>
-                        </Card>
+                                        Submit Attendance
+                                    </Button>
+                                </div>
+                            </Card>
+                        </>
                     )}
 
                     {!selectedSubject && (
@@ -354,6 +361,6 @@ export default function FacultyDashboard() {
                     )}
                 </main>
             </div>
-        </RoleGuard>
+        </RoleGuard >
     );
 }
