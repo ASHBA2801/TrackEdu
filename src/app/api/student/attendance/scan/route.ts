@@ -37,13 +37,27 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid or expired QR code" }, { status: 400 });
         }
 
-        // 3. Check Location (Radius 25-40m)
+        // 3. Check Location (Radius 50m)
         // If session has location set
         if (session.latitude && session.longitude) {
             const dist = calculateDistance(session.latitude, session.longitude, userLoc.lat, userLoc.lng);
-            if (dist > 40) { // Using 40m as upper bound
-                return NextResponse.json({ error: "You are too far from the class" }, { status: 400 });
+
+            // Temporary Debug Logging
+            console.log("--- QR SCAN DEBUG ---");
+            console.log(`Student ID: ${studentId}`);
+            console.log(`Session ID: ${session.id}`);
+            console.log(`Faculty Loc: ${session.latitude}, ${session.longitude}`);
+            console.log(`Student Loc: ${userLoc.lat}, ${userLoc.lng}`);
+            console.log(`Distance: ${dist.toFixed(2)} meters`);
+            console.log("---------------------");
+
+            if (dist > 50) { // Increased to 50m
+                return NextResponse.json({
+                    error: `You are too far from the class (${Math.round(dist)}m > 50m). Please move closer to the faculty.`
+                }, { status: 400 });
             }
+        } else {
+            console.log("Session has no location data, skipping distance check.");
         }
 
         // 4. Check Enrollment
@@ -53,9 +67,17 @@ export async function POST(req: NextRequest) {
             select: { departmentId: true, id: true }
         });
 
-        if (!student || student.departmentId !== session.subject.departmentId) {
+        if (!student) {
+            return NextResponse.json({ error: "Student not found" }, { status: 404 });
+        }
+
+        // TODO: Enable enrollment validation when HOD module is implemented.
+        // Currently, we allow any logged-in student to scan if they have the code.
+        /*
+        if (student.departmentId !== session.subject.departmentId) {
             return NextResponse.json({ error: "Not enrolled in this subject" }, { status: 403 });
         }
+        */
 
         // 5. Upsert Attendance
         // "student not already marked present" -> Upsert handles this or check first.

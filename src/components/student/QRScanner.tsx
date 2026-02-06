@@ -72,7 +72,11 @@ export default function QRScanner({ studentId }: { studentId: string }) {
         } catch (e: any) {
             console.error(e);
             if (e.code === 1) { // PERMISSION_DENIED
-                setResult({ success: false, message: 'Location permission is required.' });
+                setResult({ success: false, message: 'Location permission is required. Please enable it in your browser settings.' });
+            } else if (e.code === 2) { // POSITION_UNAVAILABLE
+                setResult({ success: false, message: 'Location unavailable. Ensure GPS is enabled.' });
+            } else if (e.code === 3) { // TIMEOUT
+                setResult({ success: false, message: 'Location request timed out. Please retry.' });
             } else {
                 setResult({ success: false, message: 'Error marking attendance. Please try again.' });
             }
