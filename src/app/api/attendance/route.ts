@@ -208,31 +208,41 @@ export async function POST(request: NextRequest) {
 
         const dateObj = new Date(date);
 
-        // Transaction
-        const operations = records.map((record: any) => {
-            return prisma.attendance.upsert({
+        // Process each attendance record
+        const operations = records.map(async (record: any) => {
+            // Check if an attendance record already exists for this student/subject/date
+            const existing = await prisma.attendance.findFirst({
                 where: {
-                    studentId_subjectId_date: {
-                        studentId: record.studentId,
-                        subjectId: subjectId,
-                        date: dateObj
-                    }
-                },
-                update: {
-                    status: record.status as AttendanceStatus,
-                    markedById: markedById
-                },
-                create: {
                     studentId: record.studentId,
                     subjectId: subjectId,
                     date: dateObj,
-                    status: record.status as AttendanceStatus,
-                    markedById: markedById
-                }
+                },
             });
+
+            if (existing) {
+                // Update existing record
+                return prisma.attendance.update({
+                    where: { id: existing.id },
+                    data: {
+                        status: record.status as AttendanceStatus,
+                        markedById: markedById,
+                    },
+                });
+            } else {
+                // Create new record
+                return prisma.attendance.create({
+                    data: {
+                        studentId: record.studentId,
+                        subjectId: subjectId,
+                        date: dateObj,
+                        status: record.status as AttendanceStatus,
+                        markedById: markedById,
+                    },
+                });
+            }
         });
 
-        await prisma.$transaction(operations);
+        await Promise.all(operations);
 
         return NextResponse.json({
             success: true,

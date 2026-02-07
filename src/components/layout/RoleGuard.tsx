@@ -33,6 +33,7 @@ export function RoleGuard({ children, allowedRoles, redirectTo = '/login' }: Rol
                 STUDENT: '/dashboard/student',
                 FACULTY: '/dashboard/faculty',
                 ADMIN: '/dashboard/admin',
+                HOD: '/dashboard/hod',
             };
             router.replace(dashboardRoutes[userRole] || redirectTo);
         }

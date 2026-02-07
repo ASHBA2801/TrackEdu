@@ -86,9 +86,10 @@ export default function StudentDashboard() {
 
                 <main className="p-6 max-w-7xl mx-auto">
                     <div className="mb-8">
-                        {/* Pass real student ID to scanner */}
-                        {student && <QRScanner studentId={student.id} />}
+                        {/* QR Scanner - always show, pass studentId when available */}
+                        <QRScanner studentId={student?.id || ''} />
                     </div>
+
 
                     {/* Profile and Stats Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

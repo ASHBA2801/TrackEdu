@@ -79,28 +79,33 @@ export async function POST(req: NextRequest) {
         }
         */
 
-        // 5. Upsert Attendance
-        // "student not already marked present" -> Upsert handles this or check first.
-        // Use upsert to be safe/idempotent.
-        const attendance = await prisma.attendance.upsert({
+        // 5. Check for existing attendance and create/update
+        const existingAttendance = await prisma.attendance.findFirst({
             where: {
-                studentId_classSessionId: {
-                    studentId: student.id,
-                    classSessionId: session.id
-                }
-            },
-            update: {
-                // Already exists, do nothing or ensure PRESENT?
-                status: "PRESENT"
-            },
-            create: {
                 studentId: student.id,
-                subjectId: session.subjectId,
                 classSessionId: session.id,
-                date: new Date(), // Using current time/date
-                status: "PRESENT",
-            }
+            },
         });
+
+        let attendance;
+        if (existingAttendance) {
+            // Already marked, just ensure status is PRESENT
+            attendance = await prisma.attendance.update({
+                where: { id: existingAttendance.id },
+                data: { status: "PRESENT" },
+            });
+        } else {
+            // Create new attendance record
+            attendance = await prisma.attendance.create({
+                data: {
+                    studentId: student.id,
+                    subjectId: session.subjectId,
+                    classSessionId: session.id,
+                    date: new Date(),
+                    status: "PRESENT",
+                },
+            });
+        }
 
         return NextResponse.json({ success: true, attendance });
 

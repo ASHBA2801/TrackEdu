@@ -20,6 +20,7 @@ type FacultyProfile = {
     name: string;
     email: string;
     departmentName: string;
+    departmentId: string;
     assignedSubjects: Subject[];
 };
 
@@ -245,7 +246,7 @@ export default function FacultyDashboard() {
                     {/* Attendance Marking Section */}
                     {selectedSubject && facultyProfile && (
                         <>
-                            <SessionControl subjectId={selectedSubject} facultyId={facultyProfile.id} />
+                            <SessionControl subjectId={selectedSubject} facultyId={facultyProfile.id} departmentId={facultyProfile.departmentId} />
 
                             <Card title="Mark Manual Attendance" className="mb-6">
 
