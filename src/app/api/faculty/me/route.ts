@@ -21,7 +21,12 @@ export async function GET(req: NextRequest) {
                     }
                 },
                 department: true,
-                subjects: true
+                // Get subjects assigned by HOD via FacultySubjectAssignment
+                hodAssignments: {
+                    include: {
+                        subject: true
+                    }
+                }
             }
         });
 
@@ -29,19 +34,22 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Faculty profile not found" }, { status: 404 });
         }
 
+        // Extract subjects from HOD assignments
+        const assignedSubjects = faculty.hodAssignments.map(assignment => ({
+            id: assignment.subject.id,
+            name: assignment.subject.name,
+            code: assignment.subject.code,
+            semester: assignment.subject.semester,
+            departmentId: assignment.subject.departmentId
+        }));
+
         const data = {
             id: faculty.id,
             name: faculty.user.name,
             email: faculty.user.email,
             departmentId: faculty.departmentId,
             departmentName: faculty.department.name,
-            assignedSubjects: faculty.subjects.map(sub => ({
-                id: sub.id,
-                name: sub.name,
-                code: sub.code,
-                semester: sub.semester,
-                departmentId: sub.departmentId
-            }))
+            assignedSubjects
         };
 
         return NextResponse.json({ success: true, data });
