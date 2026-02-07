@@ -11,6 +11,7 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
     ADMIN: "/dashboard/admin",
     FACULTY: "/dashboard/faculty",
     STUDENT: "/dashboard/student",
+    HOD: "/dashboard/hod",
 };
 
 /**
@@ -20,6 +21,7 @@ const DASHBOARD_ROLE_MAP: Record<string, string> = {
     "/dashboard/admin": "ADMIN",
     "/dashboard/faculty": "FACULTY",
     "/dashboard/student": "STUDENT",
+    "/dashboard/hod": "HOD",
 };
 
 /**
@@ -74,6 +76,17 @@ export async function middleware(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         if (userRole !== "ADMIN") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+        return NextResponse.next();
+    }
+
+    // Protect HOD API routes
+    if (pathname.startsWith("/api/hod")) {
+        if (!isAuthenticated) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (userRole !== "HOD") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
         return NextResponse.next();

@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
             id: faculty.id,
             name: faculty.user.name,
             email: faculty.user.email,
+            departmentId: faculty.departmentId,
             departmentName: faculty.department.name,
             assignedSubjects: faculty.subjects.map(sub => ({
                 id: sub.id,

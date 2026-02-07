@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Button, Card } from '@/components/ui'; // Assuming these exist
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, Card, Select } from '@/components/ui';
 import { QRCodeSVG } from 'qrcode.react';
-import { Play, Square, QrCode, XCircle, RefreshCw } from 'lucide-react';
+import { Play, Square, QrCode, XCircle, RefreshCw, Users } from 'lucide-react';
 
 type Session = {
     id: string;
@@ -12,14 +12,56 @@ type Session = {
     qrEnabled: boolean;
     currentQrCode: string | null;
     currentQrExpiresAt: string | null;
+    classroomId?: string;
+    classroomName?: string;
 };
 
-export default function SessionControl({ subjectId, facultyId }: { subjectId: string; facultyId: string }) {
+type Classroom = {
+    id: string;
+    name: string;
+    studentCount: number;
+};
+
+interface SessionControlProps {
+    subjectId: string;
+    facultyId: string;
+    departmentId: string;
+}
+
+export default function SessionControl({ subjectId, facultyId, departmentId }: SessionControlProps) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(false);
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState(0);
     const pollInterval = useRef<NodeJS.Timeout | null>(null);
+
+    // New state for classroom selection
+    const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+    const [selectedClassroom, setSelectedClassroom] = useState<string>('');
+    const [loadingClassrooms, setLoadingClassrooms] = useState(true);
+    const [showClassroomSelect, setShowClassroomSelect] = useState(false);
+
+    // Fetch classrooms for the department
+    const fetchClassrooms = useCallback(async () => {
+        setLoadingClassrooms(true);
+        try {
+            const res = await fetch(`/api/faculty/classrooms?departmentId=${departmentId}`);
+            const data = await res.json();
+            if (data.success) {
+                setClassrooms(data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching classrooms:', error);
+        } finally {
+            setLoadingClassrooms(false);
+        }
+    }, [departmentId]);
+
+    useEffect(() => {
+        if (departmentId) {
+            fetchClassrooms();
+        }
+    }, [departmentId, fetchClassrooms]);
 
     // Poll for QR updates if enabled
     useEffect(() => {
@@ -62,6 +104,11 @@ export default function SessionControl({ subjectId, facultyId }: { subjectId: st
     }, [timeLeft]);
 
     const startSession = async () => {
+        if (!selectedClassroom) {
+            alert('Please select a classroom first');
+            return;
+        }
+
         setLoading(true);
         try {
             // Get location if possible
@@ -81,10 +128,21 @@ export default function SessionControl({ subjectId, facultyId }: { subjectId: st
             const res = await fetch('/api/faculty/sessions/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ facultyId, subjectId, latitude: lat, longitude: lng }),
+                body: JSON.stringify({
+                    facultyId,
+                    subjectId,
+                    classroomId: selectedClassroom,
+                    latitude: lat,
+                    longitude: lng,
+                }),
             });
             const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
             setSession(data);
+            setShowClassroomSelect(false);
         } catch (e) {
             alert("Failed to start session");
         } finally {
@@ -100,6 +158,7 @@ export default function SessionControl({ subjectId, facultyId }: { subjectId: st
             await fetch(`/api/faculty/sessions/${session.id}/end`, { method: 'POST' });
             setSession(null);
             setQrCode(null);
+            setSelectedClassroom('');
             alert("Session ended. Attendance finalized.");
         } catch (e) {
             alert("Failed to end session");
@@ -129,18 +188,82 @@ export default function SessionControl({ subjectId, facultyId }: { subjectId: st
         }
     };
 
+    const selectedClassroomData = classrooms.find(c => c.id === selectedClassroom);
+
     if (!session) {
         return (
             <Card className="p-6 mb-6 bg-white shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Class Session</h3>
-                        <p className="text-gray-500 text-sm">Start a live session to take automatic attendance.</p>
+                {!showClassroomSelect ? (
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-800">Class Session</h3>
+                            <p className="text-gray-500 text-sm">Start a live session to take automatic attendance.</p>
+                        </div>
+                        <Button onClick={() => setShowClassroomSelect(true)} className="bg-green-600 hover:bg-green-700 text-white flex gap-2">
+                            <Play size={16} /> Start Class
+                        </Button>
                     </div>
-                    <Button onClick={startSession} isLoading={loading} className="bg-green-600 hover:bg-green-700 text-white flex gap-2">
-                        <Play size={16} /> Start Class
-                    </Button>
-                </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-800">Select Classroom</h3>
+                            <button onClick={() => setShowClassroomSelect(false)} className="text-gray-400 hover:text-gray-600">
+                                <XCircle size={20} />
+                            </button>
+                        </div>
+
+                        {loadingClassrooms ? (
+                            <div className="text-center py-4 text-gray-500">Loading classrooms...</div>
+                        ) : classrooms.length > 0 ? (
+                            <>
+                                <Select
+                                    label="Choose a classroom for this session"
+                                    value={selectedClassroom}
+                                    onChange={(e) => setSelectedClassroom(e.target.value)}
+                                    options={[
+                                        { value: '', label: 'Select classroom...' },
+                                        ...classrooms.map(c => ({
+                                            value: c.id,
+                                            label: `${c.name} (${c.studentCount} students)`,
+                                        })),
+                                    ]}
+                                />
+
+                                {selectedClassroomData && (
+                                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-blue-700">
+                                        <Users size={16} />
+                                        <span className="text-sm">
+                                            {selectedClassroomData.studentCount} students will be marked for attendance
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => setShowClassroomSelect(false)}
+                                        className="flex-1"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={startSession}
+                                        isLoading={loading}
+                                        disabled={!selectedClassroom}
+                                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                        Start Session
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-4">
+                                <p className="text-gray-500 mb-2">No classrooms available for your department.</p>
+                                <p className="text-sm text-gray-400">Please contact your HOD to create classrooms.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Card>
         );
     }
@@ -154,6 +277,12 @@ export default function SessionControl({ subjectId, facultyId }: { subjectId: st
                         <h3 className="text-lg font-bold text-gray-800">Live Session Active</h3>
                     </div>
                     <p className="text-gray-500 text-sm">Session ID: {session.id.slice(-6)}</p>
+                    {session.classroomName && (
+                        <p className="text-gray-600 text-sm mt-1">
+                            <Users size={14} className="inline mr-1" />
+                            Classroom: {session.classroomName}
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex gap-3">
