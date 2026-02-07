@@ -11,11 +11,30 @@ enum UserRole {
   STUDENT
   FACULTY
   ADMIN
+  HOD
 }
 
 enum AttendanceStatus {
   PRESENT
   ABSENT
+  LEAVE
+  ON_DUTY
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum OnDutyStatus {
+  ACTIVE
+  REVOKED
 }
 
 model User {
@@ -31,66 +50,91 @@ model User {
   updatedAt DateTime @updatedAt
   student   Student?
   faculty   Faculty?
+  hod       HOD?
 }
 
 model Department {
-  id        String       @id @default(cuid())
-  name      String
-  code      String       @unique
-  isDeleted Boolean      @default(false)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  students  Student[]
-  faculties Faculty[]
-  subjects  Subject[]
-  classes   Classroom[]
+  id            String         @id @default(cuid())
+  name          String
+  code          String         @unique
+  isDeleted     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  students      Student[]
+  faculties     Faculty[]
+  subjects      Subject[]
+  classrooms    Classroom[]
+  hods          HOD[]
+  leaveRequests LeaveRequest[]
 }
 
 model Subject {
-  id           String       @id @default(cuid())
-  name         String
-  code         String       @unique
-  isDeleted    Boolean      @default(false)
-  semester     Int
-  credits      Int
-  departmentId String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  department   Department   @relation(fields: [departmentId], references: [id])
-  attendance   Attendance[]
-  faculties    Faculty[]    @relation("FacultySubjects")
-  sessions     ClassSession[]
+  id             String                     @id @default(cuid())
+  name           String
+  code           String                     @unique
+  isDeleted      Boolean                    @default(false)
+  semester       Int
+  credits        Int
+  departmentId   String
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  department     Department                 @relation(fields: [departmentId], references: [id])
+  attendance     Attendance[]
+  faculties      Faculty[]                  @relation("FacultySubjects")
+  sessions       ClassSession[]
+  hodAssignments FacultySubjectAssignment[]
 }
 
 model Student {
-  id           String       @id @default(cuid())
-  rollNumber   String       @unique
-  year         Int
-  section      String
-  isActive     Boolean      @default(true)
-  isDeleted    Boolean      @default(false)
-  userId       String       @unique
-  departmentId String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  user         User         @relation(fields: [userId], references: [id])
-  department   Department   @relation(fields: [departmentId], references: [id])
-  attendance   Attendance[]
+  id                  String             @id @default(cuid())
+  rollNumber          String             @unique
+  year                Int
+  section             String
+  isActive            Boolean            @default(true)
+  isDeleted           Boolean            @default(false)
+  userId              String             @unique
+  departmentId        String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  user                User               @relation(fields: [userId], references: [id])
+  department          Department         @relation(fields: [departmentId], references: [id])
+  attendance          Attendance[]
+  classroomStudents   ClassroomStudent[]
+  leaveRequests       LeaveRequest[]
+  otps                StudentOtp[]
+  onDutyPermissions   OnDutyPermission[]
 }
 
 model Faculty {
-  id           String       @id @default(cuid())
-  isActive     Boolean      @default(true)
-  isDeleted    Boolean      @default(false)
-  userId       String       @unique
-  departmentId String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  user             User         @relation(fields: [userId], references: [id])
-  department       Department   @relation(fields: [departmentId], references: [id])
-  subjects         Subject[]    @relation("FacultySubjects")
+  id               String                     @id @default(cuid())
+  isActive         Boolean                    @default(true)
+  isDeleted        Boolean                    @default(false)
+  userId           String                     @unique
+  departmentId     String
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  user             User                       @relation(fields: [userId], references: [id])
+  department       Department                 @relation(fields: [departmentId], references: [id])
+  subjects         Subject[]                  @relation("FacultySubjects")
   attendanceMarked Attendance[]
   sessions         ClassSession[]
+  hodAssignments   FacultySubjectAssignment[]
+}
+
+model HOD {
+  id                 String                     @id @default(cuid())
+  isActive           Boolean                    @default(true)
+  isDeleted          Boolean                    @default(false)
+  userId             String                     @unique
+  departmentId       String
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  user               User                       @relation(fields: [userId], references: [id])
+  department         Department                 @relation(fields: [departmentId], references: [id])
+  reviewedLeaves     LeaveRequest[]             @relation("ReviewedBy")
+  notifications      Notification[]
+  onDutyPermissions  OnDutyPermission[]
+  facultyAssignments FacultySubjectAssignment[]
 }
 
 model Attendance {
@@ -107,45 +151,143 @@ model Attendance {
   markedBy       Faculty?         @relation(fields: [markedById], references: [id])
   classSession   ClassSession?    @relation(fields: [classSessionId], references: [id])
 
-  @@unique([studentId, subjectId, date])
-  @@unique([studentId, classSessionId])
+  @@index([studentId, classSessionId])
 }
 
 model Classroom {
-  id           String       @id @default(cuid())
+  id           String             @id @default(cuid())
   name         String
   departmentId String
-  isDeleted    Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  department   Department   @relation(fields: [departmentId], references: [id])
+  batch        String?
+  year         Int?
+  semester     Int?
+  isDeleted    Boolean            @default(false)
+  createdById  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  department   Department         @relation(fields: [departmentId], references: [id])
+  students     ClassroomStudent[]
+  sessions     ClassSession[]
+}
+
+model ClassroomStudent {
+  id          String    @id @default(cuid())
+  classroomId String
+  studentId   String
+  createdAt   DateTime  @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  student     Student   @relation(fields: [studentId], references: [id])
+
+  @@unique([classroomId, studentId])
 }
 
 model ClassSession {
-  id                 String    @id @default(cuid())
+  id                 String        @id @default(cuid())
   facultyId          String
   subjectId          String
-  startTime          DateTime  @default(now())
+  classroomId        String?
+  startTime          DateTime      @default(now())
   endTime            DateTime?
   status             SessionStatus @default(ACTIVE)
-  qrEnabled          Boolean   @default(false)
+  qrEnabled          Boolean       @default(false)
   currentQrCode      String?
   currentQrExpiresAt DateTime?
   qrEnabledAt        DateTime?
   qrDisabledAt       DateTime?
   latitude           Float?
   longitude          Float?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   faculty    Faculty      @relation(fields: [facultyId], references: [id])
   subject    Subject      @relation(fields: [subjectId], references: [id])
+  classroom  Classroom?   @relation(fields: [classroomId], references: [id])
   attendance Attendance[]
 
   @@index([currentQrCode])
 }
 
-enum SessionStatus {
-  ACTIVE
-  COMPLETED
+model LeaveRequest {
+  id            String         @id @default(cuid())
+  studentId     String
+  departmentId  String
+  leaveDate     DateTime       @db.Date
+  reason        String
+  status        LeaveStatus    @default(PENDING)
+  createdAt     DateTime       @default(now())
+  reviewedById  String?
+  reviewedAt    DateTime?
+  student       Student        @relation(fields: [studentId], references: [id])
+  department    Department     @relation(fields: [departmentId], references: [id])
+  reviewedBy    HOD?           @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  notifications Notification[]
+}
+
+model Notification {
+  id             String        @id @default(cuid())
+  hodId          String
+  type           String
+  message        String
+  isRead         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  leaveRequestId String?
+  hod            HOD           @relation(fields: [hodId], references: [id])
+  leaveRequest   LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
+}
+
+// ============================================
+// NEW MODELS FOR HOD FEATURES & STUDENT OTP
+// ============================================
+
+// Student OTP for 2FA after login
+// OTP is generated by HOD and student enters it manually
+model StudentOtp {
+  id           String   @id @default(cuid())
+  studentId    String
+  departmentId String
+  otpHash      String   // Stored hashed for security
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime // Must be 60 seconds from createdAt
+  isUsed       Boolean  @default(false)
+  attempts     Int      @default(0) // Max 5 attempts allowed
+  student      Student  @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, isUsed])
+  @@index([expiresAt])
+}
+
+// On-Duty Permission granted by HOD
+// Students with OD are marked as ON_DUTY instead of ABSENT
+model OnDutyPermission {
+  id             String       @id @default(cuid())
+  studentId      String
+  departmentId   String
+  startDate      DateTime     @db.Date
+  endDate        DateTime     @db.Date
+  reason         String
+  status         OnDutyStatus @default(ACTIVE)
+  createdByHodId String
+  createdAt      DateTime     @default(now())
+  revokedAt      DateTime?
+  student        Student      @relation(fields: [studentId], references: [id])
+  createdBy      HOD          @relation(fields: [createdByHodId], references: [id])
+
+  @@index([studentId, startDate, endDate])
+  @@index([departmentId, status])
+}
+
+// HOD-controlled faculty-subject assignment
+// HOD assigns subjects from their department to any faculty
+model FacultySubjectAssignment {
+  id              String   @id @default(cuid())
+  facultyId       String
+  subjectId       String
+  assignedByHodId String
+  createdAt       DateTime @default(now())
+  faculty         Faculty  @relation(fields: [facultyId], references: [id])
+  subject         Subject  @relation(fields: [subjectId], references: [id])
+  assignedBy      HOD      @relation(fields: [assignedByHodId], references: [id])
+
+  @@unique([facultyId, subjectId])
+  @@index([subjectId])
 }

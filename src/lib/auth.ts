@@ -87,6 +87,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
     ADMIN: "/dashboard/admin",
     FACULTY: "/dashboard/faculty",
     STUDENT: "/dashboard/student",
+    HOD: "/dashboard/hod",
 };
 
 /**
