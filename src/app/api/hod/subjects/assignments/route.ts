@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
 /**
  * HOD Subject Assignment API
@@ -14,8 +14,8 @@ import { getToken } from "next-auth/jwt";
 // GET - Get all faculty-subject assignments for HOD's department
 export async function GET(request: NextRequest) {
     try {
-        const token = await getToken({ req: request });
-        if (!token || token.role !== "HOD") {
+        const session = await auth();
+        if (!session?.user?.id || session.user.role !== "HOD") {
             return NextResponse.json(
                 { success: false, error: "Unauthorized" },
                 { status: 401 }
@@ -23,8 +23,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Get HOD's department
-        const hod = await prisma.hOD.findUnique({
-            where: { userId: token.id as string },
+        const hod = await prisma.hOD.findFirst({
+            where: {
+                user: { id: session.user.id },
+                isDeleted: false
+            },
             select: { id: true, departmentId: true }
         });
 
@@ -37,6 +40,7 @@ export async function GET(request: NextRequest) {
 
         // Get all assignments for subjects in this department
         const assignments = await prisma.facultySubjectAssignment.findMany({
+
             where: {
                 subject: {
                     departmentId: hod.departmentId
@@ -114,8 +118,8 @@ export async function GET(request: NextRequest) {
 // POST - Create new faculty-subject assignment
 export async function POST(request: NextRequest) {
     try {
-        const token = await getToken({ req: request });
-        if (!token || token.role !== "HOD") {
+        const session = await auth();
+        if (!session?.user?.id || session.user.role !== "HOD") {
             return NextResponse.json(
                 { success: false, error: "Unauthorized" },
                 { status: 401 }
@@ -133,8 +137,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Get HOD's department and id
-        const hod = await prisma.hOD.findUnique({
-            where: { userId: token.id as string },
+        const hod = await prisma.hOD.findFirst({
+            where: {
+                user: { id: session.user.id },
+                isDeleted: false
+            },
             select: { id: true, departmentId: true }
         });
 
@@ -144,6 +151,7 @@ export async function POST(request: NextRequest) {
                 { status: 404 }
             );
         }
+
 
         // Verify subject belongs to HOD's department
         const subject = await prisma.subject.findUnique({
