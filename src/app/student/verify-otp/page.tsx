@@ -127,7 +127,7 @@ export default function VerifyOtpPage() {
 
                             <div className="mt-6 text-center">
                                 <p className="text-sm text-gray-500">
-                                    Don't have an OTP?{' '}
+                                    Don&apos;t have an OTP?{' '}
                                     <span className="text-gray-700">
                                         Contact your HOD to generate one for you.
                                     </span>

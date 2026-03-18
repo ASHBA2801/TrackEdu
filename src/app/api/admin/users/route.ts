@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
             ];
         }
 
-        if (roleFilter && ["STUDENT", "FACULTY", "ADMIN"].includes(roleFilter)) {
+        if (roleFilter && ["STUDENT", "FACULTY", "ADMIN", "HOD"].includes(roleFilter)) {
             where.role = roleFilter as UserRole;
         }
 
@@ -128,7 +128,7 @@ export async function PATCH(req: NextRequest) {
         const updateData: { role?: UserRole; isActive?: boolean } = {};
 
         if (role !== undefined) {
-            if (!["STUDENT", "FACULTY", "ADMIN"].includes(role)) {
+            if (!["STUDENT", "FACULTY", "ADMIN", "HOD"].includes(role)) {
                 return NextResponse.json(
                     { error: "Invalid role" },
                     { status: 400 }

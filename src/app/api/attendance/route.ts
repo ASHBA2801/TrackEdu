@@ -58,7 +58,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Build Where Clause
-        const where: any = {};
+        const where: { 
+            studentId?: string; 
+            subjectId?: string | { in: string[] }; 
+            date?: Date; 
+        } = {};
 
         if (studentId) where.studentId = studentId;
         if (subjectId) where.subjectId = subjectId;
@@ -91,7 +95,7 @@ export async function GET(request: NextRequest) {
             });
 
             // Group by subject
-            const subjectStats = new Map<string, { subject: any, total: number, attended: number }>();
+            const subjectStats = new Map<string, { subject: { id: string; name: string; code: string }, total: number, attended: number }>();
 
             records.forEach(r => {
                 if (!subjectStats.has(r.subjectId)) {
@@ -209,7 +213,7 @@ export async function POST(request: NextRequest) {
         const dateObj = new Date(date);
 
         // Process each attendance record
-        const operations = records.map(async (record: any) => {
+        const operations = records.map(async (record: { studentId: string; status: string }) => {
             // Check if an attendance record already exists for this student/subject/date
             const existing = await prisma.attendance.findFirst({
                 where: {

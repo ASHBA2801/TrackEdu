@@ -25,13 +25,16 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const status = searchParams.get('status');
 
-        const where: any = { departmentId: hod.departmentId };
+        const where: { 
+            departmentId: string; 
+            status?: "PENDING" | "APPROVED" | "REJECTED"; 
+        } = { departmentId: hod.departmentId };
         if (status && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
-            where.status = status;
+            where.status = status as "PENDING" | "APPROVED" | "REJECTED";
         }
 
         const leaveRequests = await prisma.leaveRequest.findMany({
-            where,
+            where: where as any, // Type assertion to bypass strict typing
             include: {
                 student: {
                     include: {
@@ -39,9 +42,7 @@ export async function GET(request: NextRequest) {
                     },
                 },
                 reviewedBy: {
-                    include: {
-                        user: { select: { name: true } },
-                    },
+                    select: { user: { select: { name: true } } },
                 },
             },
             orderBy: { createdAt: 'desc' },
@@ -50,9 +51,9 @@ export async function GET(request: NextRequest) {
         const formatted = leaveRequests.map(lr => ({
             id: lr.id,
             studentId: lr.studentId,
-            studentName: lr.student.user.name,
-            studentEmail: lr.student.user.email,
-            rollNumber: lr.student.rollNumber,
+            studentName: lr.student?.user.name,
+            studentEmail: lr.student?.user.email,
+            rollNumber: lr.student?.rollNumber,
             leaveDate: lr.leaveDate,
             reason: lr.reason,
             status: lr.status,

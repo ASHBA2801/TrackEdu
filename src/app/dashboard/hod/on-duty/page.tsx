@@ -344,7 +344,7 @@ export default function OnDutyPage() {
                         </div>
 
                         <p className="text-xs text-gray-500">
-                            Students with active OD permission will be marked as "ON_DUTY" instead of "ABSENT" for sessions during this period.
+                            Students with active OD permission will be marked as &quot;ON_DUTY&quot; instead of &quot;ABSENT&quot; for sessions during this period.
                         </p>
 
                         <div className="flex gap-3 pt-4">

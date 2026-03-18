@@ -37,14 +37,14 @@ export async function GET(request: NextRequest) {
         }
 
         // Build where clause
-        const where: any = { departmentId: hod.departmentId };
+        const where: { departmentId: string; status?: "ACTIVE" | "REVOKED" } = { departmentId: hod.departmentId };
         if (status && status !== "all") {
-            where.status = status;
+            where.status = status as "ACTIVE" | "REVOKED";
         }
 
         // Get OD permissions
         const permissions = await prisma.onDutyPermission.findMany({
-            where,
+            where: where as any, // Type assertion to bypass strict typing
             include: {
                 student: {
                     include: {

@@ -31,7 +31,13 @@ export async function GET(request: NextRequest) {
         const endDate = searchParams.get('endDate');
 
         // Build where clause for sessions within department
-        const sessionWhere: any = {
+        const sessionWhere: { 
+            subject: { departmentId: string }; 
+            classroomId?: string; 
+            subjectId?: string; 
+            facultyId?: string; 
+            startTime?: { gte?: Date; lte?: Date }; 
+        } = {
             subject: { departmentId },
         };
 

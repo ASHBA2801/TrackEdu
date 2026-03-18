@@ -21,7 +21,14 @@ export async function POST(req: NextRequest) {
         }
 
         // Build session data
-        const sessionData: any = {
+        const sessionData: { 
+            facultyId: string; 
+            subjectId: string; 
+            status: "ACTIVE" | "ENDED"; 
+            latitude?: number; 
+            longitude?: number; 
+            classroomId?: string; 
+        } = {
             facultyId,
             subjectId,
             status: "ACTIVE",
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
         }
 
         const session = await prisma.classSession.create({
-            data: sessionData,
+            data: sessionData as any, // Type assertion to bypass strict typing
             include: {
                 classroom: { select: { name: true } },
             },

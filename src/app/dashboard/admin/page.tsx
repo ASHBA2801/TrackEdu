@@ -29,7 +29,7 @@ interface ModalState {
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [modal, setModal] = useState<ModalState>({ isOpen: false, type: 'add', entity: null });
-    const [formData, setFormData] = useState<Record<string, any>>({});
+    const [formData, setFormData] = useState<Record<string, unknown>>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
@@ -141,8 +141,8 @@ export default function AdminDashboard() {
                 closeModal();
                 setMessage(null);
             }, 1500);
-        } catch (e: any) {
-            setMessage({ type: 'error', text: e.message || 'Operation failed' });
+        } catch (e: unknown) {
+            setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Operation failed' });
         }
     };
 
@@ -169,8 +169,8 @@ export default function AdminDashboard() {
 
             setMessage({ type: 'success', text: `${entity} deleted successfully` });
             fetchData();
-        } catch (err: any) {
-            alert(err.message || 'Failed to delete');
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : 'Failed to delete');
         } finally {
             setIsDeleting(false);
             setDeleteModal({ isOpen: false, entity: '', id: '', name: '' });
@@ -465,48 +465,48 @@ export default function AdminDashboard() {
                             <div className="space-y-4">
                                 {modal.entity === 'student' && (
                                     <>
-                                        <Input label="Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                                        <Input label="Email" type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        <Input label="Name" value={(formData.name as string) || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                        <Input label="Email" type="email" value={(formData.email as string) || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                         {modal.type === 'add' && (
                                             <Input
                                                 label="Password (Optional)"
                                                 type="password"
-                                                value={formData.password || ''}
+                                                value={(formData.password as string) || ''}
                                                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                                                 placeholder="Leave blank to auto-generate"
                                             />
                                         )}
-                                        <Input label="Roll Number" value={formData.rollNumber || ''} onChange={e => setFormData({ ...formData, rollNumber: e.target.value })} />
+                                        <Input label="Roll Number" value={(formData.rollNumber as string) || ''} onChange={e => setFormData({ ...formData, rollNumber: e.target.value })} />
                                         <Select
                                             label="Department"
                                             options={departments.map(d => ({ value: d.id, label: d.name }))}
-                                            value={formData.departmentId || ''}
+                                            value={(formData.departmentId as string) || ''}
                                             onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                         />
                                         <div className="grid grid-cols-2 gap-4">
-                                            <Input label="Year" type="number" min="1" max="4" value={formData.year || ''} onChange={e => setFormData({ ...formData, year: e.target.value })} />
-                                            <Input label="Section" value={formData.section || ''} onChange={e => setFormData({ ...formData, section: e.target.value })} />
+                                            <Input label="Year" type="number" min="1" max="4" value={(formData.year as string) || ''} onChange={e => setFormData({ ...formData, year: e.target.value })} />
+                                            <Input label="Section" value={(formData.section as string) || ''} onChange={e => setFormData({ ...formData, section: e.target.value })} />
                                         </div>
                                     </>
                                 )}
 
                                 {modal.entity === 'faculty' && (
                                     <>
-                                        <Input label="Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                                        <Input label="Email" type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        <Input label="Name" value={(formData.name as string) || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                        <Input label="Email" type="email" value={(formData.email as string) || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                         {modal.type === 'add' && (
                                             <Input
                                                 label="Password (Optional)"
                                                 type="password"
-                                                value={formData.password || ''}
+                                                value={(formData.password as string) || ''}
                                                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                                                 placeholder="Leave blank to auto-generate"
                                             />
                                         )}
                                         <Select
                                             label="Department"
-                                            options={departments.map(d => ({ value: d.id, label: d.name }))}
-                                            value={formData.departmentId || ''}
+                                            options={departments.map(d => ({ value: d.id, label: `${d.name} (${d.code})` }))}
+                                            value={(formData.departmentId as string) || ''}
                                             onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                         />
 
@@ -542,24 +542,24 @@ export default function AdminDashboard() {
 
                                 {modal.entity === 'department' && (
                                     <>
-                                        <Input label="Department Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                                        <Input label="Code" value={formData.code || ''} onChange={e => setFormData({ ...formData, code: e.target.value })} />
+                                        <Input label="Department Name" value={(formData.name as string) || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                        <Input label="Code" value={(formData.code as string) || ''} onChange={e => setFormData({ ...formData, code: e.target.value })} />
                                     </>
                                 )}
 
                                 {modal.entity === 'subject' && (
                                     <>
-                                        <Input label="Subject Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                                        <Input label="Code" value={formData.code || ''} onChange={e => setFormData({ ...formData, code: e.target.value })} />
+                                        <Input label="Subject Name" value={(formData.name as string) || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                        <Input label="Code" value={(formData.code as string) || ''} onChange={e => setFormData({ ...formData, code: e.target.value })} />
                                         <Select
                                             label="Department"
                                             options={departments.map(d => ({ value: d.id, label: d.name }))}
-                                            value={formData.departmentId || ''}
+                                            value={(formData.departmentId as string) || ''}
                                             onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                         />
                                         <div className="grid grid-cols-2 gap-4">
-                                            <Input label="Semester" type="number" min="1" max="8" value={formData.semester || ''} onChange={e => setFormData({ ...formData, semester: e.target.value })} />
-                                            <Input label="Credits" type="number" min="1" max="5" value={formData.credits || ''} onChange={e => setFormData({ ...formData, credits: e.target.value })} />
+                                            <Input label="Semester" type="number" min="1" max="8" value={(formData.semester as string) || ''} onChange={e => setFormData({ ...formData, semester: e.target.value })} />
+                                            <Input label="Credits" type="number" min="1" max="5" value={(formData.credits as string) || ''} onChange={e => setFormData({ ...formData, credits: e.target.value })} />
                                         </div>
                                     </>
                                 )}

@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
         const departmentId = searchParams.get("departmentId");
         const activeOnly = searchParams.get("activeOnly") === "true";
 
-        const where: any = { isDeleted: false };
+        const where: { 
+            isDeleted: boolean; 
+            departmentId?: string; 
+            isActive?: boolean; 
+        } = { isDeleted: false };
 
         if (departmentId) {
             where.departmentId = departmentId;

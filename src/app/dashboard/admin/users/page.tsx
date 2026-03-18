@@ -10,7 +10,7 @@ interface User {
     id: string;
     name: string;
     email: string;
-    role: "STUDENT" | "FACULTY" | "ADMIN";
+    role: "STUDENT" | "FACULTY" | "ADMIN" | "HOD";
     isActive: boolean;
     createdAt: string;
 }
@@ -305,6 +305,7 @@ export default function AdminUsersPage() {
                             <option value="">All Roles</option>
                             <option value="STUDENT">Student</option>
                             <option value="FACULTY">Faculty</option>
+                            <option value="HOD">HOD</option>
                             <option value="ADMIN">Admin</option>
                         </select>
                         <button
@@ -355,15 +356,19 @@ export default function AdminUsersPage() {
                                                     value={user.role}
                                                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                                     disabled={updateLoading === user.id || user.id === session?.user?.id}
-                                                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all cursor-pointer ${user.role === "ADMIN"
-                                                        ? "bg-purple-50 border-purple-200 text-purple-700 focus:ring-purple-200"
-                                                        : user.role === "FACULTY"
+                                                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                                                        user.role === "ADMIN"
+                                                            ? "bg-purple-50 border-purple-200 text-purple-700 focus:ring-purple-200"
+                                                            : user.role === "FACULTY"
                                                             ? "bg-blue-50 border-blue-200 text-blue-700 focus:ring-blue-200"
+                                                            : user.role === "HOD"
+                                                            ? "bg-yellow-50 border-yellow-200 text-yellow-700 focus:ring-yellow-200"
                                                             : "bg-green-50 border-green-200 text-green-700 focus:ring-green-200"
-                                                        } disabled:opacity-50 disabled:cursor-not-allowed outline-none focus:ring-2`}
+                                                    } disabled:opacity-50 disabled:cursor-not-allowed outline-none focus:ring-2`}
                                                 >
                                                     <option value="STUDENT">Student</option>
                                                     <option value="FACULTY">Faculty</option>
+                                                    <option value="HOD">HOD</option>
                                                     <option value="ADMIN">Admin</option>
                                                 </select>
                                             </td>

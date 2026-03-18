@@ -12,7 +12,7 @@ import { auth } from "@/lib/auth";
  */
 
 // GET - Get all faculty-subject assignments for HOD's department
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
         if (!session?.user?.id || session.user.role !== "HOD") {

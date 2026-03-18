@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Button, Card } from '@/components/ui';
 import { Loader2, MapPin, CheckCircle, XCircle } from 'lucide-react';
@@ -11,6 +11,53 @@ export default function QRScanner({ studentId }: { studentId: string }) {
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [manualCode, setManualCode] = useState('');
+
+    const handleScan = useCallback(async (code: string) => {
+        setLoading(true);
+        setResult(null);
+
+        try {
+            // Get Location
+            if (!navigator.geolocation) {
+                setResult({ success: false, message: 'Geolocation is not supported by this browser.' });
+                return;
+            }
+
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            });
+
+            const { latitude, longitude } = position.coords;
+
+            // Send to API
+            const response = await fetch('/api/student/attendance/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId,
+                    qrCode: code,
+                    latitude,
+                    longitude
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setResult({ success: true, message: data.message || 'Attendance marked successfully!' });
+            } else {
+                setResult({ success: false, message: data.error || 'Failed to mark attendance' });
+            }
+        } catch (err: unknown) {
+            setResult({ success: false, message: err instanceof Error ? err.message : 'An error occurred' });
+        } finally {
+            setLoading(false);
+        }
+    }, [studentId]);
 
     useEffect(() => {
         let scanner: any;
@@ -39,51 +86,7 @@ export default function QRScanner({ studentId }: { studentId: string }) {
                 try { scanner.clear(); } catch (e) { }
             }
         };
-    }, [scanning]);
-
-    const handleScan = async (code: string) => {
-        setLoading(true);
-        setResult(null);
-
-        try {
-            // Get Location
-            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-            });
-
-            const res = await fetch('/api/student/attendance/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    qrCode: code,
-                    studentId,
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude
-                })
-            });
-
-            const data = await res.json();
-            if (res.ok && data.success) {
-                setResult({ success: true, message: `Attendance Marked Successfully!` });
-            } else {
-                setResult({ success: false, message: data.error || 'Failed to mark attendance' });
-            }
-
-        } catch (e: any) {
-            console.error(e);
-            if (e.code === 1) { // PERMISSION_DENIED
-                setResult({ success: false, message: 'Location permission is required. Please enable it in your browser settings.' });
-            } else if (e.code === 2) { // POSITION_UNAVAILABLE
-                setResult({ success: false, message: 'Location unavailable. Ensure GPS is enabled.' });
-            } else if (e.code === 3) { // TIMEOUT
-                setResult({ success: false, message: 'Location request timed out. Please retry.' });
-            } else {
-                setResult({ success: false, message: 'Error marking attendance. Please try again.' });
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [scanning, handleScan]);
 
     return (
         <Card className="p-6 max-w-md mx-auto mt-6">

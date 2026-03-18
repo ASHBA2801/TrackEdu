@@ -113,8 +113,8 @@ export default function HODManagementPage() {
 
             setMessage({ type: 'success', text: 'HOD created successfully!' });
             fetchData();
-        } catch (err: any) {
-            setFormError(err.message);
+        } catch (err: unknown) {
+            setFormError(err instanceof Error ? err.message : 'An unknown error occurred');
         } finally {
             setIsSubmitting(false);
         }
@@ -146,8 +146,8 @@ export default function HODManagementPage() {
             setMessage({ type: 'success', text: 'HOD updated successfully!' });
             setShowEditModal(false);
             fetchData();
-        } catch (err: any) {
-            setFormError(err.message);
+        } catch (err: unknown) {
+            setFormError(err instanceof Error ? err.message : 'An unknown error occurred');
         } finally {
             setIsSubmitting(false);
         }
@@ -172,8 +172,8 @@ export default function HODManagementPage() {
             setShowDeleteModal(false);
             setSelectedHod(null);
             fetchData();
-        } catch (err: any) {
-            setMessage({ type: 'error', text: err.message });
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'An unknown error occurred' });
         } finally {
             setIsSubmitting(false);
         }
@@ -195,8 +195,8 @@ export default function HODManagementPage() {
 
             setMessage({ type: 'success', text: `HOD ${hod.isActive ? 'disabled' : 'enabled'} successfully!` });
             fetchData();
-        } catch (err: any) {
-            setMessage({ type: 'error', text: err.message });
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'An unknown error occurred' });
         }
     };
 
